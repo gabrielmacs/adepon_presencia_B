@@ -58,6 +58,34 @@
   .tarjeta .res{font-size:15px;line-height:1.5;color:#3c3a4d;margin:0}
   .tarjeta .min{margin-top:auto;font:12px system-ui,sans-serif;color:var(--gris)}
 
+  /* índice compacto: solo títulos; cada fila se expande para ver imagen y resumen */
+  #indice .cont{max-width:860px}
+  .herramientas{display:flex;justify-content:flex-end;gap:8px;margin:4px 0 -8px}
+  .herramientas button{background:#fff;border:1px solid var(--linea);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--azul)}
+  .lista{background:#fff;border:1px solid var(--linea);border-radius:14px;overflow:hidden}
+  .item{border-top:1px solid var(--linea)}
+  .item:first-child{border-top:0}
+  .cab{display:flex;align-items:center;gap:12px;padding:13px 14px 13px 16px;cursor:pointer}
+  .cab:hover{background:#f7f5ff}
+  .cab .n{font:700 13px system-ui,sans-serif;color:#fff;width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center}
+  .cab .t{flex:1;min-width:0}
+  .cab .t b{display:block;font-size:17px;line-height:1.3;color:var(--azul)}
+  .cab .t span{font:italic 13.5px Georgia,serif;color:var(--gris)}
+  .cab .leer{flex:none;border:0;background:var(--azul);color:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600}
+  .cab .abrir{flex:none;border:1px solid var(--linea);background:#fff;color:var(--azul);width:34px;height:34px;border-radius:50%;
+    font-size:16px;transition:transform .25s}
+  .item.abierta .abrir{transform:rotate(180deg)}
+  .det{display:none;gap:16px;padding:0 16px 16px 54px;align-items:flex-start}
+  .item.abierta .det{display:flex}
+  .det .foto{width:170px;height:110px;flex:none;border-radius:10px;background:#ddd center/cover no-repeat}
+  .det p{margin:0 0 8px;font-size:15px;line-height:1.5;color:#3c3a4d}
+  .det small{font:12px system-ui,sans-serif;color:var(--gris)}
+  .leida-ok{font:600 11px system-ui,sans-serif;color:#1b7f5a;margin-left:6px}
+  @media (max-width:760px){
+    .det{flex-direction:column;padding-left:16px} .det .foto{width:100%;height:150px}
+    .cab .leer{display:none} .cab .t b{font-size:16px}
+  }
+
   /* ---------- HISTORIA ---------- */
   #historia{background:var(--papel)}
   #barras{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;gap:4px;padding:8px 10px 0;background:var(--azul)}
@@ -271,25 +299,47 @@ $("menos").onclick = () => { tam = Math.max(tam - 1.5, 14); aplicarTam(); };
 // ---------- vistas ----------
 function ver(v) { document.querySelectorAll(".vista").forEach(s => s.classList.toggle("activa", s.id === v)); }
 
-// índice en tarjetas agrupadas por sección
+// índice compacto: por sección, solo títulos; ▾ despliega imagen y resumen
 (function armarIndice() {
-  const cont = $("tarjetas"); let sec = null, grid;
+  const cont = $("tarjetas"); let sec = null, lista;
+  const herr = document.createElement("div"); herr.className = "herramientas";
+  herr.innerHTML = `<button id="expTodo">▾ Expandir todo</button><button id="conTodo">▴ Contraer todo</button>`;
+  cont.appendChild(herr);
   H.forEach((h, i) => {
     if (h.seccion !== sec) {
       sec = h.seccion;
       const g = document.createElement("div"); g.className = "grupo";
-      g.innerHTML = `<h3 style="color:${h.color}">${sec}</h3><div class="tarjetas"></div>`;
-      cont.appendChild(g); grid = g.querySelector(".tarjetas");
+      g.innerHTML = `<h3 style="color:${h.color}">${sec}</h3><div class="lista"></div>`;
+      cont.appendChild(g); lista = g.querySelector(".lista");
     }
-    const t = document.createElement("div"); t.className = "tarjeta";
-    t.innerHTML = `<div class="foto ${h.img ? "" : "sin"}" ${h.img ? `style="background-image:url('${h.img}')"` : ""}></div>
-      <div class="info"><span class="chip" style="background:${h.color}">${h.seccion}</span>
-      <h4>${h.titulo}</h4>${h.autor ? `<div class="autor">${h.autor}</div>` : ""}
-      <p class="res">${h.resumen}</p><div class="min">${h.id === "humor" ? "Historieta" : h.minutos + " min de lectura"}</div></div>`;
-    t.onclick = () => abrir(i);
-    grid.appendChild(t);
+    const f = document.createElement("div"); f.className = "item"; f.dataset.id = h.id;
+    f.innerHTML = `<div class="cab">
+        <span class="n" style="background:${h.color}">${i + 1}</span>
+        <div class="t"><b>${h.titulo}</b>${h.autor ? `<span>${h.autor}</span>` : ""}<span class="leida-ok"></span></div>
+        <button class="leer">Leer →</button>
+        <button class="abrir" title="Ver resumen">▾</button></div>
+      <div class="det">${h.img ? `<div class="foto" data-img="${i}"></div>` : ""}
+        <div><p>${h.resumen}</p><small>${h.id === "humor" ? "Historieta" : h.minutos + " min de lectura"}</small><br>
+        <button class="btn" style="padding:9px 18px;font-size:14px;margin-top:10px">Leer artículo →</button></div></div>`;
+    const alternar = () => {
+      f.classList.toggle("abierta");
+      const foto = f.querySelector(".foto[data-img]");          // la imagen se carga al expandir
+      if (foto && !foto.style.backgroundImage) foto.style.backgroundImage = `url('${H[i].img}')`;
+    };
+    f.querySelector(".abrir").onclick = e => { e.stopPropagation(); alternar(); };
+    f.querySelector(".leer").onclick = e => { e.stopPropagation(); abrir(i); };
+    f.querySelector(".det .btn").onclick = () => abrir(i);
+    f.querySelector(".cab").onclick = () => abrir(i);
+    lista.appendChild(f);
   });
+  $("expTodo").onclick = () => document.querySelectorAll(".item:not(.abierta) .abrir").forEach(b => b.click());
+  $("conTodo").onclick = () => document.querySelectorAll(".item.abierta .abrir").forEach(b => b.click());
 })();
+function marcarIndice() {          // ✔ en las secciones ya leídas (si el lector usa el contador)
+  document.querySelectorAll(".item").forEach(f => {
+    f.querySelector(".leida-ok").textContent = (typeof C !== "undefined" && C.leidos.includes(f.dataset.id)) ? "✔ leído" : "";
+  });
+}
 
 // barras de progreso tipo "historias"
 $("barras").innerHTML = H.map((h, i) => `<i title="${h.titulo.replace(/"/g, "&quot;")}" data-i="${i}"></i>`).join("");
@@ -326,7 +376,7 @@ function abrir(i, haciaAtras = false) {
   history.replaceState(null, "", "#" + h.id);
   avance();
 }
-function irIndice() { ver("indice"); history.replaceState(null, "", "#contenido"); }
+function irIndice() { ver("indice"); marcarIndice(); history.replaceState(null, "", "#contenido"); }
 
 // avance de lectura en la barra actual
 function avance() {
